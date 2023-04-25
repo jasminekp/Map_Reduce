@@ -48,7 +48,7 @@ void Executive::obtainingDirectories() {
         checker = checkInput(outputDir);
     } while (checker == 0);
 
-    Workflow wk(Executive::getinputDir, Executive::getintermediateDir, Executive::getoutputDir); // will send to the via get functions
+    Workflow wk(Executive::getinputDir, Executive::getoutputDir, Executive::getintermediateDir); // will send to the via get functions
 
     wk.execute(); 
 }
