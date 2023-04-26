@@ -7,6 +7,17 @@ using std::string;
 using std::ofstream;
 
 
+bool compareDirectories(string directory1, string directory2) {
+	int result = directory1.compare(directory2); // compares to see if the two directories are equal
+
+	if (result == 0) { // if the directories are equal, then we allow it as a valid input
+		cout << "It seems you are trying to re-use a directory location. Please try selecting a new directory\n\n";
+		return 0;
+	}
+	else {
+		return 1;
+	}
+}
 
 bool checkBackSlash(string directory) {
 
@@ -75,7 +86,7 @@ int main(int argc, char *argv[])
 		}
 
 	} 
-	while (checker == 1);
+	while (checker == 0);
 
 	cout << "The path you have entered is correct. Thank you.\n\n";
 
@@ -103,7 +114,7 @@ int main(int argc, char *argv[])
 		checker = compareDirectories(inputDir, intermediateDir); // checking to see if we have different directory locations
 
 	} 
-	while (checker == 1);
+	while (checker == 0);
 
 	cout << "The path you have entered is correct. Thank you.\n\n";
 
@@ -136,7 +147,7 @@ int main(int argc, char *argv[])
 
 
 	} 
-	while (checker == 1);
+	while (checker == 0);
 	cout << "The path you have entered is correct. Thank you.\n\n";
 
 	try
@@ -154,17 +165,6 @@ int main(int argc, char *argv[])
 
 }
 
-bool compareDirectories(string directory1, string directory2) {
-	int result = directory1.compare(directory2); // compares to see if the two directories are equal
-
-	if (result == 0) { // if the directories are equal, then we allow it as a valid input
-		cout << "It seems you are trying to re-use a directory location. Please try selecting a new directory\n\n";
-		return 0;
-	}
-	else {
-		return 1;
-	}
-}
 
 
 
