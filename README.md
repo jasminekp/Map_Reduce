@@ -1,6 +1,3 @@
-/**************************
-
-DESCRIPTION:
 CSE 687 Object Oriented Design
 Project Phase 1 - Map Reduce WorkFlow
 
@@ -28,7 +25,3 @@ GITHUB AUTHORS:
 @jasminekp
 @risktakingkev
 @betito44
-
-
-
-**************************/
