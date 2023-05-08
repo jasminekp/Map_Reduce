@@ -174,14 +174,11 @@
     <ClInclude Include="Map.h" />
     <ClInclude Include="Reduce.h" />
     <ClInclude Include="Workflow.h" />
-<<<<<<< Updated upstream
-=======
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Map\Map\Map.vcxproj">
       <Project>{f60b1ddf-b44c-48f8-9f23-79f0443fb6f8}</Project>
     </ProjectReference>
->>>>>>> Stashed changes
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

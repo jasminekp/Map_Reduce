@@ -92,10 +92,7 @@ bool Map::map(std::string key, std::string value)
 //start method starts the mapping process by clearing any existing temp files within intermediate directory and opening the file to write to
 void Map::start()
 {
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
 	fileWriter.clear(this->intermediateDirectory + "temp.txt");
 	fileWriter.open(this->intermediateDirectory + "temp.txt", std::ios::out | std::ios::app);
 
