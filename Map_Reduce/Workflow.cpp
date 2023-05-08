@@ -1,6 +1,12 @@
 #include "Workflow.h"
 #include <unordered_map>
 #include "Reduce.h"
+<<<<<<< Updated upstream
+=======
+#include <windows.h>
+
+
+>>>>>>> Stashed changes
 
 
 /*
@@ -16,16 +22,31 @@ Workflow::Workflow(std::string inputD, std::string outputD, std::string intermed
 }
 
 
+<<<<<<< Updated upstream
+=======
+typedef void(*funcMapperStart)(std::string);
+typedef void(*funcMapperMap)(std::string key, std::string value);
+typedef void(*funcMapperEnd)();
+
+
+
+>>>>>>> Stashed changes
 bool Workflow::execute() 
 {
 
 	std::cout << "\n...Please wait..." << std::endl;
 	int countFiles = 0;
 
+<<<<<<< Updated upstream
+=======
+
+
+>>>>>>> Stashed changes
 	//---------------------------------------------------------------
 	//------------------Mapper phase
 	//---------------------------------------------------------------
 
+<<<<<<< Updated upstream
 
 	Map mapper(this->intermediateDir);
 	mapper.start();
@@ -57,6 +78,85 @@ bool Workflow::execute()
 	}
 
 	mapper.end();
+=======
+	HINSTANCE hMapDLL;
+	funcMapperStart start;
+	funcMapperMap map;
+	funcMapperEnd end;
+	const wchar_t *libName = L"Map";
+
+
+	//integrate the DLL
+	hMapDLL = LoadLibraryEx(libName, NULL, NULL);   // Handle to DLL
+
+	if (hMapDLL != NULL)
+	{
+		start = (funcMapperStart)GetProcAddress(hMapDLL, "start");
+		map = (funcMapperMap)GetProcAddress(hMapDLL, "start");
+		end = (funcMapperEnd)GetProcAddress(hMapDLL, "end");
+
+		if (start != NULL)
+		{
+			start(this->intermediateDir);
+		}
+		else
+		{
+			std::cout << "Did not load start correctly." << std::endl;
+		}
+
+
+		for (const auto & inputfile : std::experimental::filesystem::directory_iterator(inputDir))
+		{
+			if (inputfile.path().extension().string() == ".txt")
+			{
+				countFiles++;
+				FileManager reader;
+
+				std::string fileName = inputfile.path().filename().string();
+
+
+				reader.open(this->inputDir + fileName, std::ios::in);
+
+				std::string blockData;
+
+				while (reader.getNextBlock(blockData))
+				{
+
+					if (map != NULL)
+					{
+						map(inputfile.path().filename().string(), blockData);
+					}
+					else 
+					{
+						std::cout << "Did not load map correctly." << std::endl;
+					}
+
+				}
+
+				reader.close();
+
+			}
+
+		}
+
+		
+		if (end != NULL)
+		{
+			end();
+		}
+		else 
+		{
+			std::cout << "Did not load end correctly." << std::endl;
+		}
+
+		FreeLibrary(hMapDLL);
+	}
+	else {
+		std::cout << "Library load failed!" << std::endl;
+	}
+	
+
+>>>>>>> Stashed changes
 
 
 	if (countFiles == 0)
@@ -106,15 +206,26 @@ bool Workflow::execute()
 
 	Reduce reducer(this->outputDir);
 	reducer.start();
+<<<<<<< Updated upstream
 
+=======
+	
+>>>>>>> Stashed changes
 	for (auto pair : sorterMap)
 	{
 		auto key = pair.first;
 		auto value = pair.second;
+<<<<<<< Updated upstream
 
 		reducer.reduce(key, value);
 	}
 
+=======
+	
+		reducer.reduce(key, value);
+	}
+	
+>>>>>>> Stashed changes
 	reducer.end();
 
 	std::cout << "\nDone! Check Output Directory." << std::endl;
