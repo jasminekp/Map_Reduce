@@ -12,7 +12,6 @@
 
 
 
-
  //TokenizeValue reads in the raw data line from the file and stores the data into distinct words
 void TokenizeValue(std::string rawDataLine, std::vector<std::string>& tokens)
 {
@@ -95,15 +94,24 @@ extern "C" MAP_API bool map(std::string key, std::string value)
 
 }
 
-
-//start method starts the mapping process by clearing any existing temp files within intermediate directory and opening the file to write to
-extern "C" MAP_API void start(std::string intermediateDirectory)
+//start method starts the mapping process by clearing the temp file within intermediate directory and opening the file to write to
+extern "C" MAP_API void start(std::string intermediateDirectory, std::string fileNumber)
 {
 	
-	fileWriter.clear(intermediateDirectory + "temp.txt");
-	fileWriter.open(intermediateDirectory + "temp.txt", std::ios::out | std::ios::app);
+	fileWriter.clear(intermediateDirectory + "temp" + fileNumber + ".txt");
+	fileWriter.open(intermediateDirectory + "temp" + fileNumber + ".txt", std::ios::out | std::ios::app);
 
 }
+
+
+//start method starts the mapping process by clearing any existing temp files within intermediate directory and opening the file to write to
+//extern "C" MAP_API void start(std::string intermediateDirectory)
+//{
+//	
+//	fileWriter.clear(intermediateDirectory + "temp.txt");
+//	fileWriter.open(intermediateDirectory + "temp.txt", std::ios::out | std::ios::app);
+//
+//}
 
 
 //end method outputs any remaining data within the buffer that was not taken care of in the Export method

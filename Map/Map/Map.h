@@ -11,7 +11,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <list>
 #include <utility>
 #include <sstream>
 #include <cctype>
@@ -30,7 +29,7 @@
 bool Export(std::string distinctWord, int value, std::string fileName);
 extern "C" MAP_API bool map(std::string key, std::string value);
 //extern "C" MAP_API Map(std::string intermediateDir);
-extern "C" MAP_API void start(std::string intermediateDirectory);
+extern "C" MAP_API void start(std::string intermediateDirectory, std::string fileNumber);
 extern "C" MAP_API void end();
 void TokenizeValue(std::string rawDataLine, std::vector<std::string>& tokens);
 

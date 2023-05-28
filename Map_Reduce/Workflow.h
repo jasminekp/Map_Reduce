@@ -21,7 +21,7 @@ class Workflow
 {
 
 public:
-	typedef void(*funcMapperStart)(std::string);
+	typedef void(*funcMapperStart)(std::string, std::string fileNumber);
 	typedef void(*funcMapperMap)(std::string key, std::string value);
 	typedef void(*funcMapperEnd)();
 
@@ -31,6 +31,7 @@ public:
 
 	Workflow(std::string inputDir, std::string outputDir, std::string intermediateDir, std::string mapperDLL, std::string reducerDLL);
 	bool execute();
+	void mapperThread(int countFiles);
 
 	bool LoadMapDLL(HINSTANCE &hMapDLL, funcMapperStart &start, funcMapperMap &map, funcMapperEnd &end);
 	bool LoadReduceDLL(HINSTANCE &hReduceDLL, funcReducerStart &start, funcReducerReduce &reduce, funcReducerEnd &end);

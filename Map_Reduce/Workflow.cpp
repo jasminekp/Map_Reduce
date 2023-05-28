@@ -1,6 +1,7 @@
 #include "Workflow.h"
 #include <unordered_map>
 #include <comdef.h>
+#include <thread>
 
 
 
@@ -8,6 +9,8 @@
  * The Workflow class determines the flow of the entire Map_Reduce program. 
  *
  */
+
+HINSTANCE hMapDLL;
 
 Workflow::Workflow(std::string inputD, std::string outputD, std::string intermediateD, std::string mapper, std::string reducer)
 {
@@ -20,40 +23,32 @@ Workflow::Workflow(std::string inputD, std::string outputD, std::string intermed
 }
 
 
-
-
-bool Workflow::execute() 
+void Workflow::mapperThread(int countFiles)
 {
-	std::cout << "\n...Please wait..." << std::endl;
-	int countFiles = 0;
 
-	//---------------------------------------------------------------
-	//------------------Load the Map DLL
-	//---------------------------------------------------------------
-
-	HINSTANCE hMapDLL;
 	funcMapperStart mapStart;
 	funcMapperMap map;
 	funcMapperEnd mapEnd;
 
 	LoadMapDLL(hMapDLL, mapStart, map, mapEnd);
 
+	std::vector<std::thread> threads;
+	std::vector<std::string> fileNames;
 
-
-	//---------------------------------------------------------------
-	//------------------Mapper Phase
-	//---------------------------------------------------------------
-	mapStart(this->intermediateDir);
 
 	for (const auto & inputfile : std::experimental::filesystem::directory_iterator(inputDir))
 	{
 		if (inputfile.path().extension().string() == ".txt")
 		{
 			countFiles++;
+
+			threads.push_back(std::thread(mapStart, this->intermediateDir, std::to_string(countFiles)));
+
 			FileManager reader;
 
 			std::string fileName = inputfile.path().filename().string();
 
+			fileNames.push_back(fileName);
 
 			reader.open(this->inputDir + fileName, std::ios::in);
 
@@ -70,10 +65,25 @@ bool Workflow::execute()
 		}
 	}
 
+	for (auto &th : threads) {
+		th.join();
+	}
+
 	mapEnd();
 
+
+}
+
+
+bool Workflow::execute() 
+{
+	std::cout << "\n...Please wait..." << std::endl;
+	int countFiles = 0;
+
+	mapperThread(countFiles);
+
 	
-	if (countFiles == 0)
+	if (&countFiles == 0)
 	{
 		std::cout << "Error: could not find any text files in the input directory." << std::endl;
 
