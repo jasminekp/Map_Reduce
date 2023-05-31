@@ -11,14 +11,14 @@
 #include <iostream>
 #include <string>
 #include <vector>
+//#include <list>
 #include <utility>
 #include <sstream>
 #include <cctype>
 #include <algorithm>
 #include <regex>
-#include <unordered_map>
 #include "FileManager.h"
-#include <mutex>
+
 
 
 
@@ -29,19 +29,17 @@
 
 bool Export(std::string distinctWord, int value, std::string fileName);
 extern "C" MAP_API bool map(std::string key, std::string value);
-extern "C" MAP_API bool start(std::string intermediateDirectory, std::string fileName);
-extern "C" MAP_API void end(std::string fileName);
+//extern "C" MAP_API Map(std::string intermediateDir);
+extern "C" MAP_API void start(std::string intermediateDirectory);
+extern "C" MAP_API void end();
 void TokenizeValue(std::string rawDataLine, std::vector<std::string>& tokens);
-bool removeNonAscii(std::string& str);
 
 
 FileManager fileWriter;
 int Threshold = 1000;
-std::unordered_map<std::string, std::list<std::pair<std::string, int>>> bufferMap;
-std::unordered_map<std::string, FileManager> fileWriters;
-std::mutex queue_mutex;
-
+std::list<std::pair<std::string, int>> buffer;
 std::string intermediateDirectory;
+bool removeNonAscii(std::string& str);
 
 
 

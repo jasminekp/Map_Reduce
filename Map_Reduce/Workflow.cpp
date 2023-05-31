@@ -1,7 +1,6 @@
 #include "Workflow.h"
 #include <unordered_map>
 #include <comdef.h>
-#include <thread>
 
 
 
@@ -10,9 +9,7 @@
  *
  */
 
-HINSTANCE hMapDLL;
-
-Workflow::Workflow(std::string inputD, std::string outputD, std::string intermediateD, std::string mapper, std::string reducer)
+Workflow::Workflow(std::string inputD, std::string outputD, std::string intermediateD, std::string mapper, std::string reducer, int reducerProcesses)
 {
 	this->inputDir = inputD;
 	this->outputDir = outputD;
@@ -20,88 +17,115 @@ Workflow::Workflow(std::string inputD, std::string outputD, std::string intermed
 
 	this->reducerDLL = reducer;
 	this->mapperDLL = mapper;
+
+	this->numberOfReducers = reducerProcesses;
 }
 
 
-void Workflow::mapperThread(int countFiles)
+bool Workflow::MapperJobIsAvailable(std::string &inputFile)
 {
 
-	funcMapperStart mapStart;
-	funcMapperMap map;
-	funcMapperEnd mapEnd;
-
-	LoadMapDLL(hMapDLL, mapStart, map, mapEnd);
-
-	std::vector<std::thread> threads;
-	std::vector<std::string> fileNames;
-
-
-	for (const auto & inputfile : std::experimental::filesystem::directory_iterator(inputDir))
+	if (!mapperQueue.empty())
 	{
-		if (inputfile.path().extension().string() == ".txt")
+		inputFile = mapperQueue.front();
+		mapperQueue.pop();
+
+		return true;
+	}
+	else 
+	{
+		return false;
+	}
+
+}
+
+
+bool Workflow::ReducerJobIsAvailable(std::string &inputFile, int reducerNumber)
+{
+
+	auto &rt = reducerQueue[reducerNumber];
+
+	//check that there is a reducer queue with the specified reducer number
+	if (!rt.empty())
+	{
+		inputFile = rt.front();
+		rt.pop();
+
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+void Workflow::mapThread(int numberOfReducers, int startingReducerNumber)
+{
+	int reducerNumber = (startingReducerNumber % numberOfReducers) + 1;
+
+	std::string inputFile = "";
+
+	while (MapperJobIsAvailable(inputFile))
+	{
+		std::string intermediateFileName = std::to_string(reducerNumber) + inputFile;
+
+		if (!mapStart(this->intermediateDir, intermediateFileName))
 		{
-			countFiles++;
-
-			threads.push_back(std::thread(mapStart, this->intermediateDir, std::to_string(countFiles)));
-
-			FileManager reader;
-
-			std::string fileName = inputfile.path().filename().string();
-
-			fileNames.push_back(fileName);
-
-			reader.open(this->inputDir + fileName, std::ios::in);
-
-			std::string blockData;
-
-			while (reader.getNextBlock(blockData))
-			{
-
-				map(inputfile.path().filename().string(), blockData);
-
-			}
-			reader.close();
-
+			continue;
 		}
-	}
 
-	for (auto &th : threads) {
-		th.join();
-	}
+		FileManager reader;
+		std::string blockData;
 
-	mapEnd();
+		reader.open(this->inputDir + inputFile, std::ios::in);
+
+		while (reader.getNextBlock(blockData))
+		{
+			map(intermediateFileName, blockData);
+		}
+
+		reader.close();
+
+		mapEnd(intermediateFileName);
+
+		reducerNumber = (reducerNumber % numberOfReducers) + 1;
+	}
 
 
 }
 
 
-bool Workflow::execute() 
+
+
+void Workflow::reducerThread(int reducerNumber)
 {
-	std::cout << "\n...Please wait..." << std::endl;
-	int countFiles = 0;
-
-	mapperThread(countFiles);
-
-	
-	if (&countFiles == 0)
-	{
-		std::cout << "Error: could not find any text files in the input directory." << std::endl;
-
-		FileManager deleter;
-		deleter.deleteFile(this->outputDir + "SUCCESS.txt");
-		return 1;
-	}
-
-
-	//---------------------------------------------------------------
-	//-----------------Sorter Phase
-	//---------------------------------------------------------------
-
 	std::unordered_map<std::string, std::vector<int>> sorterMap;
 	FileManager Ireader;
 	std::string IblockData;
+	std::string inputFile = "";
 
-	Ireader.open(this->intermediateDir + "temp.txt", std::ios::in);
+
+	while (ReducerJobIsAvailable(inputFile, reducerNumber))
+	{
+		//sorter phase
+		sortData(inputFile, sorterMap, this->intermediateDir);
+
+
+		//reducer phase
+		reduceData(inputFile, sorterMap, this->outputDir);
+
+	}
+	
+}
+
+void Workflow::sortData(std::string inputFile, std::unordered_map<std::string, std::vector<int>> &sorterMap, std::string directory)
+{
+	
+	FileManager Ireader;
+	std::string IblockData;
+
+	//sorter phase
+	Ireader.open(directory + inputFile, std::ios::in);
 
 	while (Ireader.getNextBlock(IblockData))
 	{
@@ -120,54 +144,174 @@ bool Workflow::execute()
 	}
 
 	Ireader.close();
+}
 
 
-
-	//---------------------------------------------------------------
-	//------------------Load the Reduce DLL
-	//---------------------------------------------------------------
-
-	HINSTANCE hReduceDLL;
-	funcReducerStart reduceStart;
-	funcReducerReduce reduce;
-	funcReducerEnd reduceEnd;
-
-	LoadReduceDLL(hReduceDLL, reduceStart, reduce, reduceEnd);
-
-
-
-	//---------------------------------------------------------------
-	//----------------Reducer phase
-	//---------------------------------------------------------------
-
-	reduceStart(this->outputDir);
+void Workflow::reduceData(std::string inputFile, std::unordered_map<std::string, std::vector<int>> &sorterMap, std::string directory)
+{
+	//reducer phase
+	reduceStart(directory, inputFile);
 
 	for (auto pair : sorterMap)
 	{
 		auto key = pair.first;
 		auto value = pair.second;
-	
-		reduce(key, value);
+
+		reduce(key, value, inputFile);
 	}
+
+	reduceEnd(directory, inputFile);
+}
+
+
+bool Workflow::execute() 
+{
+	std::cout << "\n...Please wait..." << std::endl;
+	int countFiles = 0;
+
+
+	//---------------------------------------------------------------
+	//------------------Load the Map DLL
+	//---------------------------------------------------------------
+	LoadMapDLL(hMapDLL, mapStart, map, mapEnd);
+
+
+	//---------------------------------------------------------------
+	//------------------Create the Mapper Queue WorkerJob
+	//---------------------------------------------------------------
+	for (const auto & inputfile : std::experimental::filesystem::directory_iterator(inputDir))
+	{
+		if (inputfile.path().extension().string() == ".txt")
+		{
+			countFiles++;
+			mapperQueue.push(inputfile.path().filename().string());
+		}
+	}
+
+	//---------------------------------------------------------------
+	//------------------Error Handling for Text Files
+	//---------------------------------------------------------------
+	if (countFiles == 0)
+	{
+		std::cout << "Error: could not find any text files in the input directory." << std::endl;
+
+		FileManager deleter;
+		deleter.deleteFile(this->outputDir + "SUCCESS.txt");
+		return 1;
+	}
+
+
+	//---------------------------------------------------------------
+	//------------------Create the Required Number of Mapper Threads
+	//---------------------------------------------------------------
+	std::vector<std::thread> threads;
+
 	
-	reduceEnd(this->outputDir);
+	uint32_t num_threads = ceil((double)mapperQueue.size() / numberOfReducers); 
+
+	//if number of threads is greater than max allowed by system, just set num threads to max allowed
+	num_threads = min(num_threads, std::thread::hardware_concurrency());
+
+	for (uint32_t i = 0; i < num_threads; i++) 
+	{
+		threads.push_back(std::thread(&Workflow::mapThread, this, numberOfReducers, i));
+	}
+
+
+	//---------------------------------------------------------------
+	//------------------Wait for All Mapper Threads to Finish
+	//---------------------------------------------------------------
+	for (auto &th : threads) 
+	{
+		th.join();
+	}
+
+	
+
+	////---------------------------------------------------------------
+	////------------------Load the Reduce DLL
+	////---------------------------------------------------------------
+	LoadReduceDLL(hReduceDLL, reduceStart, reduce, reduceEnd, reduceSuccess);
+
+
+	//---------------------------------------------------------------
+	//------------------Create the Reduce Queue WorkerJob
+	//---------------------------------------------------------------
+	for (const auto & inputfile : std::experimental::filesystem::directory_iterator(intermediateDir))
+	{
+		if (inputfile.path().extension().string() == ".txt")
+		{
+			int reducerNumber = stoi(inputfile.path().filename().string().substr(0, 1));
+
+			if (reducerQueue.find(reducerNumber) == reducerQueue.end())
+			{
+				reducerQueue[reducerNumber] = {};
+			}
+
+			reducerQueue[reducerNumber].push(inputfile.path().filename().string());
+		}
+	}
+
+
+	//---------------------------------------------------------------
+	//------------------Create the Required Number of Reducer Threads
+	//---------------------------------------------------------------
+	std::vector<std::thread> reduceThreads;
+	
+	for (int i = 0; i < numberOfReducers; i++)
+	{
+		reduceThreads.push_back(std::thread(&Workflow::reducerThread, this, i + 1));
+	}
+
+
+	//---------------------------------------------------------------
+	//------------------Wait for All Reducer Threads to Finish
+	//---------------------------------------------------------------
+	for (auto &th : reduceThreads)
+	{
+		th.join();
+	}
+
+
+	//--------------------------------------------------------------------------
+	//------------------Combine All Output Files Into One Sorted/Reduced File
+	//--------------------------------------------------------------------------
+	std::unordered_map<std::string, std::vector<int>> sorterMap;
+	FileManager Ireader;
+	std::string IblockData;
+
+	for (const auto & inputfile : std::experimental::filesystem::directory_iterator(outputDir))
+	{
+		if (inputfile.path().extension().string() == ".txt")
+		{
+			//sorter phase
+			sortData(inputfile.path().filename().string(), sorterMap, this->outputDir);
+		}
+	}
+
+	reduceData("COMBINED_OUTPUT.txt", sorterMap, this->outputDir);
+
+
+	reduceSuccess(this->outputDir);		
+
+
+	////---------------------------------------------------------------
+	////------------------End Workflow Execution & Unload the DLLs
+	////---------------------------------------------------------------
+	FreeLibrary(hMapDLL);
+	FreeLibrary(hReduceDLL);
 
 	std::cout << "\nDone! Check Output Directory." << std::endl;
 
 
-	//---------------------------------------------------------------
-	//------------------End Workflow Execution & Unload the DLLs
-	//---------------------------------------------------------------
-	FreeLibrary(hMapDLL);
-	FreeLibrary(hReduceDLL);
-
 	return 0;
-
 
 }
 
 
-bool Workflow::LoadReduceDLL(HINSTANCE &hReduceDLL, funcReducerStart &start, funcReducerReduce &reduce, funcReducerEnd &end)
+
+
+bool Workflow::LoadReduceDLL(HINSTANCE &hReduceDLL, funcReducerStart &start, funcReducerReduce &reduce, funcReducerEnd &end, funcReducerSuccess &success)
 {
 	std::string dllName = reducerDLL + "Reduce";
 
@@ -185,6 +329,7 @@ bool Workflow::LoadReduceDLL(HINSTANCE &hReduceDLL, funcReducerStart &start, fun
 		start = (funcReducerStart)GetProcAddress(hReduceDLL, "start");
 		reduce = (funcReducerReduce)GetProcAddress(hReduceDLL, "reduce");
 		end = (funcReducerEnd)GetProcAddress(hReduceDLL, "end");
+		success = (funcReducerSuccess)GetProcAddress(hReduceDLL, "createSuccessFile");
 
 
 		if (start == NULL)
@@ -200,6 +345,11 @@ bool Workflow::LoadReduceDLL(HINSTANCE &hReduceDLL, funcReducerStart &start, fun
 		if (end == NULL)
 		{
 			std::cout << "Did not load reduce end correctly." << std::endl;
+			return 1;
+		}
+		if (success == NULL)
+		{
+			std::cout << "Did not load reduce 'create success file' correctly." << std::endl;
 			return 1;
 		}
 	}

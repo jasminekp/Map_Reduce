@@ -18,7 +18,7 @@ bool compareDirectories(string directory1, string directory2)
 
 	if (result == 0) 
 	{ 
-		// if the directories are equal, then we do not allow it as a valid input
+		// if the directories are equal, then we allow it as a valid input
 		std::cout << "It seems you are trying to re-use a directory location. Please try selecting a new directory" << std::endl;
 		return 0;
 	}
@@ -84,31 +84,10 @@ void getUserInput(std::string msgPrompt, std::string &dir, bool compareDir, std:
 
 }
 
-bool cleanupDirectories(std::string dir)
-{
-	FileManager fm;
-
-
-	//clean up any existing text files in the intermediate and output directories
-
-	for (const auto & file : std::experimental::filesystem::directory_iterator(dir))
-	{
-		if (file.path().extension().string() == ".txt")
-		{
-			fm.deleteFile(dir + file.path().filename().string());
-		}
-	}
-
-	return 0;
-}
-
-
 
 int main(int argc, char *argv[])
 {
 	string inputDir, intermediateDir, outputDir, mapperDLL, reducerDLL;
-	int reducerProcesses;
-
 
 	getUserInput("Please enter the input directory where you have stored the files: ", inputDir, false, inputDir);
 	getUserInput("Please enter the intermediate directory where you would like to have the intermediate files stored: ", intermediateDir, true, inputDir);
@@ -117,19 +96,12 @@ int main(int argc, char *argv[])
 
 	getUserInput("Please enter the path of the Map DLL: ", mapperDLL, false, mapperDLL);
 	getUserInput("Please enter the path of the Reduce DLL: ", reducerDLL, false, reducerDLL);
-
-
-	std::cout << "\nPlease enter your preferred number of Reducer Processes : " << std::endl;
-	std::cin >> reducerProcesses;
-
+	
 	
 
 	try
 	{
-		cleanupDirectories(intermediateDir);
-		cleanupDirectories(outputDir);
-
-		Workflow w(inputDir, outputDir, intermediateDir, mapperDLL, reducerDLL, reducerProcesses);
+		Workflow w(inputDir, outputDir, intermediateDir, mapperDLL, reducerDLL);
 		w.execute();
 	}
 	catch (const std::exception &exc)

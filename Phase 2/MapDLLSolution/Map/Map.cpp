@@ -53,36 +53,32 @@ bool removeNonAscii(std::string& str)
 //Export method takes the distinct word, value as 1, and the name of the file to store to a buffer list (keyvaluepair)
 bool Export(std::string word, int value, std::string fileName)
 {
-	queue_mutex.lock();
-
-	auto &buffer = bufferMap[fileName];
-	auto &fileWriter = fileWriters[fileName];
-
 	if (buffer.size() >= 1000)
 	{
-		
 		for (auto data : buffer)
 		{
 			auto stringBufferData = data.first + ":" + std::to_string(data.second);
 			fileWriter.write(stringBufferData);
 		}
-
 		buffer.clear();
 	}
 
-
 	buffer.push_back(make_pair(word, 1));
-
-	queue_mutex.unlock();
 
 	return 0;
 }
 
 
+//map constructor - stores the intermediate directory
+//Map(std::string intermediateDir)
+//{
+//	this->intermediateDirectory = intermediateDir;
+//
+//}
 
 
 
-//map method - takes the key as the (intermediate) file name and value as the raw data line in order to tokenize & export to file
+//map method - takes the key as the file name and value as the raw data line in order to tokenize & export to file
 extern "C" MAP_API bool map(std::string key, std::string value)
 {
 	std::vector<std::string> vec{};
@@ -100,41 +96,20 @@ extern "C" MAP_API bool map(std::string key, std::string value)
 }
 
 
-
 //start method starts the mapping process by clearing any existing temp files within intermediate directory and opening the file to write to
-extern "C" MAP_API bool start(std::string intermediateDirectory, std::string fileName)
+extern "C" MAP_API void start(std::string intermediateDirectory)
 {
-	//std::lock_guard<std::mutex> lock(queue_mutex);
-	queue_mutex.lock();
-
-	if (bufferMap.find(fileName) != bufferMap.end() || fileWriters.find(fileName) != fileWriters.end())
-	{
-		return false;
-	}
-
-
-	fileWriters[fileName] = FileManager();
-
-	bufferMap[fileName] = {};	//create an empty buffer for the file
-
-	auto &fileWriter = fileWriters[fileName];
-
-
-	fileWriter.open(intermediateDirectory + fileName, std::ios::out | std::ios::app);
-
-	queue_mutex.unlock();
-	return true;
+	
+	fileWriter.clear(intermediateDirectory + "temp.txt");
+	fileWriter.open(intermediateDirectory + "temp.txt", std::ios::out | std::ios::app);
 
 }
 
 
 //end method outputs any remaining data within the buffer that was not taken care of in the Export method
 //and writes to the intermediate directory file
-extern "C" MAP_API void end(std::string fileName)
+extern "C" MAP_API void end()
 {
-	auto &buffer = bufferMap[fileName];
-	auto &fileWriter = fileWriters[fileName];
-
 	if (buffer.size() > 0)
 	{
 		for (auto data : buffer)
@@ -144,8 +119,6 @@ extern "C" MAP_API void end(std::string fileName)
 
 		}
 	}
-	
-
 	fileWriter.close();
 }
 
