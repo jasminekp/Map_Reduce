@@ -11,11 +11,18 @@ The command-line program runs a word count MapReduce workflow. This program runs
 Project Phase 2 - Map Reduce WorkFlow with DLL
 	Update 5/9/23: This project has been updated to take in a Map DLL and Reduce DLL from the user rather than using the source code's cpp and h files
 	
+	
+Project Phase 3 - Map Reduce Workflow with Map Thread and Reducer Thread (while maintaining DLL References)
+	Update 5/31/23: 1) Upload Phase 3 submission which incorporates parallel threading. Map Processes and Reduce Processes were included and also reference to the Phase 2 DLLs.
+					2) Reformat folder structure and include Phase 1 solution and Phase 2 solution files for history
+	
 -------------------------------------------------------------------------------
 TO RUN THE PROGRAM:
 	- Option 1: Compile the *.cpp and *.h files using the command line.  
 
-	- Option 2: In Visual Studio, load the *.sln file from the repository.
+
+	- Option 2: In Visual Studio, load the Map_Reduce.sln file from the repository. 
+				Make sure to compile the DLL files separately. Map.lib solution files are in the Map folder and Reduce.lib files are in the Reduce folder.
 
 
 TO RUN THE TEST:
