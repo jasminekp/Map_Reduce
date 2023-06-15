@@ -43,6 +43,12 @@ bool FileManager::directoryExist(const std::string&  dirName)
 	return std::experimental::filesystem::is_directory(path);
 }
 
+bool FileManager::fileExist(const std::string& fileName)
+{
+	std::experimental::filesystem::path file = fileName;  //static vs member methods
+	return std::experimental::filesystem::exists(file);
+}
+
 bool FileManager::getNextBlock(std::string& data)
 {
 

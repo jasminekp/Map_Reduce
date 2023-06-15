@@ -21,6 +21,7 @@ public:
 	void deleteFile(std::string filename);
 
 	static bool directoryExist(const std::string&  dirName);
+	static bool fileExist(const std::string& fileName);
 
 private:
 	std::fstream file;

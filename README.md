@@ -15,6 +15,9 @@ Project Phase 2 - Map Reduce WorkFlow with DLL
 Project Phase 3 - Map Reduce Workflow with Map Thread and Reducer Thread (while maintaining DLL References)
 	Update 5/31/23: 1) Upload Phase 3 submission which incorporates parallel threading. Map Processes and Reduce Processes were included and also reference to the Phase 2 DLLs.
 					2) Reformat folder structure and include Phase 1 solution and Phase 2 solution files for history
+					
+Project Phase 4 - Map Reduce Workflow with a Client Stub Socket and a Server Controller Socket
+	Updated 6/14/23: 1) Upload Phase 4 submission which incorporates creating a socket connection between the controller (workflow) and the stub process (StubProcess)
 	
 -------------------------------------------------------------------------------
 TO RUN THE PROGRAM:

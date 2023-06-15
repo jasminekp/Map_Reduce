@@ -54,8 +54,22 @@ bool checkDirExists(std::string directory) {
 
 }
 
+bool checkFileExists(std::string file) {
 
-void getUserInput(std::string msgPrompt, std::string &dir, bool compareDir, std::string &dirToCompare)
+	FileManager fm;
+
+	if (fm.fileExist(file)) {
+		return 1;
+	}
+	else {
+		std::cout << "This directory does not exist. Please try again." << std::endl;
+		return 0;
+	}
+
+}
+
+
+void getUserPathInput(std::string msgPrompt, std::string &dir, bool compareDir, std::string &dirToCompare)
 {
 	bool checker = 0;
 
@@ -84,6 +98,27 @@ void getUserInput(std::string msgPrompt, std::string &dir, bool compareDir, std:
 
 }
 
+void getUserExeInput(std::string msgPrompt, std::string &file)
+{
+	bool checker = 0;
+
+	do
+	{
+		std::cout << "\n" + msgPrompt << std::endl;
+		std::getline(std::cin, file);
+
+		checker = checkFileExists(file); //checks to see if the directory exists
+
+		
+
+		if (checker == 0) {
+			continue;
+		}
+
+	} while (checker == 0);
+
+}
+
 bool cleanupDirectories(std::string dir)
 {
 	FileManager fm;
@@ -101,19 +136,21 @@ bool cleanupDirectories(std::string dir)
 
 
 
+
 int main(int argc, char *argv[])
 {
-	string inputDir, intermediateDir, outputDir, mapperDLL, reducerDLL;
-	int reducerProcesses;
+	string inputDir, intermediateDir, outputDir, mapperDLL, reducerDLL, reducerProcesses, stubClientDir;
 
 
-	getUserInput("Please enter the input directory where you have stored the files: ", inputDir, false, inputDir);
-	getUserInput("Please enter the intermediate directory where you would like to have the intermediate files stored: ", intermediateDir, true, inputDir);
-	getUserInput("Please enter the output directory where you would like to have the output files stored: ", outputDir, true, inputDir);
+	getUserPathInput("Please enter the input directory where you have stored the files: ", inputDir, false, inputDir);
+	getUserPathInput("Please enter the intermediate directory where you would like to have the intermediate files stored: ", intermediateDir, true, inputDir);
+	getUserPathInput("Please enter the output directory where you would like to have the output files stored: ", outputDir, true, inputDir);
 
 
-	getUserInput("Please enter the path of the Map DLL: ", mapperDLL, false, mapperDLL);
-	getUserInput("Please enter the path of the Reduce DLL: ", reducerDLL, false, reducerDLL);
+	getUserPathInput("Please enter the path of the Map DLL: ", mapperDLL, false, mapperDLL);
+	getUserPathInput("Please enter the path of the Reduce DLL: ", reducerDLL, false, reducerDLL);
+
+	getUserExeInput("Please enter the executable path for the stub (client) process. Include executable name : ", stubClientDir);
 
 
 	std::cout << "\nPlease enter your preferred number of Reducer Processes : " << std::endl;
@@ -126,7 +163,7 @@ int main(int argc, char *argv[])
 		cleanupDirectories(intermediateDir);
 		cleanupDirectories(outputDir);
 
-		Workflow w(inputDir, outputDir, intermediateDir, mapperDLL, reducerDLL, reducerProcesses);
+		Workflow w(inputDir, outputDir, intermediateDir, mapperDLL, reducerDLL, reducerProcesses, stubClientDir);
 		w.execute();
 	}
 	catch (const std::exception &exc)
